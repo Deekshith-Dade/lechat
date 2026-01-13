@@ -1,0 +1,23 @@
+    SettingsScreen {
+        overflow: hidden;
+        background: #000000 60%;
+        color: #e0e0e0;
+
+        #contents {
+            width: 50%;
+            padding: 0 1;    
+            background: black 10%;                    
+            & > VerticalScroll {
+                overflow: hidden scroll;
+            }
+        }
+
+        #settings-container {
+            layout: stream;     
+        }
+
+        .search-container {
+            dock: top;
+            padding: 1 0;
+        }
+    }
