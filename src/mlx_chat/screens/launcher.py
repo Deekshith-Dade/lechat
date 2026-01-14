@@ -16,6 +16,7 @@ from textual.widgets import Footer, Header, Placeholder, Static
 from mlx_chat import interaction_item_schema
 from mlx_chat.app import ChatApp
 from mlx_chat.interaction_item_schema import InteractionItemSchema
+from mlx_chat.screens.settings import SettingsScreen
 from mlx_chat.widgets import grid_select
 from mlx_chat.widgets.grid_select import GridSelect 
 
@@ -219,12 +220,12 @@ class LauncherScreen(Screen):
         # open any model to display information here
         from mlx_chat.screens.interaction_demo import InteractionDemo
 
-        modal_response = await self.app.push_screen_wait(
-            InteractionDemo(event.selected_widget.schema)
-        )
-        # self.app.save_settings()
-        if modal_response == "launch":
-            self.post_message(LaunchItem(event.selected_widget.schema["item_name"]))
+        # modal_response = await self.app.push_screen_wait(
+        #     InteractionDemo(event.selected_widget.schema)
+        # )
+        # # self.app.save_settings()
+        # if modal_response == "launch":
+        self.post_message(LaunchItem(event.selected_widget.schema["item_name"]))
     
     @on(OpenInteractionDetails)
     @work
@@ -237,10 +238,10 @@ class LauncherScreen(Screen):
             interaction_schema = self._interaction_items[message.item_name]
         except KeyError:
             return
-        modal_response = await self.app.push_screen_wait(InteractionDemo(interaction_schema))
+        # modal_response = await self.app.push_screen_wait(InteractionDemo(interaction_schema))
         # self.app.save_settings()
-        if modal_response == "launch":
-            self.post_message(LaunchItem(interaction_schema["item_name"]))
+        # if modal_response == "launch":
+        self.post_message(LaunchItem(interaction_schema["item_name"]))
     
     @on(GridSelect.Selected, "#launcher GridSelect")
     @work
@@ -249,12 +250,12 @@ class LauncherScreen(Screen):
         assert isinstance(launcher_item, LauncherItem)
         from mlx_chat.screens.interaction_demo import InteractionDemo
 
-        modal_response = await self.app.push_screen_wait(
-            InteractionDemo(event.selected_widget.schema)
-        )
+        # modal_response = await self.app.push_screen_wait(
+        #     InteractionDemo(event.selected_widget.schema)
+        # )
         # self.app.save_settings()
-        if modal_response == "launch":
-            self.post_message(LaunchItem(event.selected_widget.agent["item_name"]))
+        # if modal_response == "launch":
+        self.post_message(LaunchItem(event.selected_widget.agent["item_name"]))
 
     @work
     async def launch_interaction(self, item_name: str) -> None:
@@ -263,6 +264,8 @@ class LauncherScreen(Screen):
         screen = None
         if item_name == "chat":
             screen = MainScreen()
+        # elif item_name == "tts":
+        #     screen = SettingsScreen()
         
         if screen is not None:
             await self.app.push_screen_wait(screen)
