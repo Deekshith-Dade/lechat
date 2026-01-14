@@ -13,7 +13,7 @@ from mlx_chat.agent.agent import AgentFail, AgentLoading, AgentReady
 from mlx_chat.screens.loading import LoadingScreen
 
 if TYPE_CHECKING:
-    from mlx_chat.screens.main import MainScreen
+    from mlx_chat.screens.main import ChatScreen
     from mlx_chat.screens.settings import SettingsScreen
     from mlx_chat.screens.launcher import Launcher
     
@@ -28,10 +28,10 @@ def get_loading_screen() -> "LoadingScreen":
 
     return LoadingScreen()
 
-def get_main_screen() -> "MainScreen":
-        from mlx_chat.screens.main import MainScreen
+def get_main_screen() -> "ChatScreen":
+        from mlx_chat.screens.chat import ChatScreen
 
-        return MainScreen()
+        return ChatScreen()
 
 def get_launcher_screen() -> "Launcher":
         from mlx_chat.screens.launcher import LauncherScreen
@@ -49,7 +49,11 @@ class ChatApp(App):
         "main": get_main_screen,
     }
 
-    MODES = {"launcher": get_launcher_screen}
+    MODES = {
+        "launcher": get_launcher_screen,
+        "chat": get_main_screen,
+    }
+
 
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding(
@@ -70,7 +74,7 @@ class ChatApp(App):
         if mode := self._initial_mode:
             self.switch_mode(mode)
         else:
-            self.push_screen(get_main_screen)
+            self.switch_mode("chat")
 
     @work
     async def action_settings(self) -> None:

@@ -5,7 +5,7 @@ from mlx_vlm.generate import stream_generate, load
 
 from textual.message_pump import MessagePump
 from mlx_chat.agent.agent import AgentBase, AgentFail, AgentReady, AgentLoading, MessageContainer, MessageDetails
-from mlx_chat.widgets.response import ResponseUpdate
+from mlx_chat.widgets.response import ResponseUpdate, ResponseMetadataUpdate
 
 
 @dataclass
@@ -86,15 +86,21 @@ class MLXVLMAgent(AgentBase):
                 last_response = response
             
 
-            self.history.append(MLXVLMMessageContainer("assistant", text,
-                MLXVLMMessageDetails(
-                    prompt_tokens=last_response.prompt_tokens,
-                    generation_tokens=last_response.generation_tokens,
-                    total_tokens=last_response.total_tokens,
-                    prompt_tps=last_response.prompt_tps,
-                    generation_tps=last_response.generation_tps,
-                    peak_memory=last_response.peak_memory,
-                )
+            metadata = dict(
+                prompt_tokens=getattr(last_response, "prompt_tokens", None),
+                generation_tokens=getattr(last_response, "generation_tokens", None),
+                total_tokens=getattr(last_response, "total_tokens", None),
+                prompt_tps=getattr(last_response, "prompt_tps", None),
+                generation_tps=getattr(last_response, "generation_tps", None),
+                peak_memory=getattr(last_response, "peak_memory", None),
+            )
+            
+            details = MLXVLMMessageDetails(**metadata)
+            message = ResponseMetadataUpdate(**metadata)
+            self.post_message(message)
+            
+            self.history.append(MLXVLMMessageContainer(
+                "assistant", text, details
             ))
 
         except Exception as e:

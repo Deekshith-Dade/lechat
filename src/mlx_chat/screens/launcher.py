@@ -259,11 +259,11 @@ class LauncherScreen(Screen):
 
     @work
     async def launch_interaction(self, item_name: str) -> None:
-        from mlx_chat.screens.main import MainScreen
+        from mlx_chat.screens.chat import ChatScreen
 
         screen = None
         if item_name == "chat":
-            screen = MainScreen()
+            screen = ChatScreen()
         # elif item_name == "tts":
         #     screen = SettingsScreen()
         

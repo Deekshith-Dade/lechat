@@ -9,7 +9,7 @@ from mlx_chat.agent.agent import AgentBase, AgentFail, AgentLoading, AgentReady
 from mlx_chat.app import ChatApp
 from mlx_chat.widgets.throbber import Throbber
 from mlx_chat.widgets.user_input import UserInput
-from mlx_chat.widgets.response import Response, ResponseUpdate
+from mlx_chat.widgets.response import Response, ResponseMetadataUpdate, ResponseUpdate
 
 
 SYSTEM = "You are the HAL 9000 the AI from the movie 2001 Space Odyssey and you are sentient. Have fun with user pretending you are this."
@@ -25,7 +25,6 @@ class Conversation(containers.Vertical):
     agent: var[AgentBase | None] = var(None, bindings=True)
     # mlx-community/gemma-3n-E2B-it-4bit
     model_name: var[str | None] = var("mlx-community/gemma-3-12b-it-qat-4bit")
-    
 
     def __init__(self):
         super().__init__()
@@ -67,6 +66,13 @@ class Conversation(containers.Vertical):
             await self._agent_response.append_fragment(event.text)
             self._agent_response.scroll_visible()
         
+    @on(ResponseMetadataUpdate)
+    async def on_response_metadata_update(self, event: ResponseMetadataUpdate) -> None:
+        event.stop()
+        if self._agent_response is not None:
+            await self._agent_response.update_border_subtitle(event)
+            self._agent_response.scroll_visible()
+
     @on(AgentFail)
     async def on_agent_fail(self, event: AgentFail) -> None:
         if self._agent_response is not None:
