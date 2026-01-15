@@ -42,6 +42,8 @@ class Response(Markdown):
         self._metadata = details
         if self.show_response_metadata:
             tps_strs = []
+            if details.prompt_tokens is not None:
+                tps_strs.append(f"Context Length: {details.prompt_tokens + details.generation_tokens}")
             if details.prompt_tps is not None:
                 tps_strs.append(f"prompt TPS: {details.prompt_tps:.2f}")
             if details.generation_tps is not None:

@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -78,8 +79,9 @@ class MLXVLMAgent(AgentBase):
             audio.extend(mess.audio or [])
 
         messages = apply_chat_template(
-            self.processor, self.agent.config, messages, num_images=len(images), num_audios=len(audio)
+            self.processor, self.agent.config, messages, num_images=len(images), num_audios=1 if len(audio) else 0
         )
+        print(messages)
         return messages, images, audio
         
     async def send_prompt(self, prompt: str) -> str | None:
@@ -99,13 +101,15 @@ class MLXVLMAgent(AgentBase):
         text = ""
         try:
             prompt, images, audio = self._prepare_messages()
+            print(audio)
             last_response = None
             for response in stream_generate(
                 self.agent, 
                 self.processor, 
                 prompt, 
-                image = images, 
-                audio = audio,
+                image = images if len(images) else None, 
+                # Currently supports one audio file
+                audio = audio[-1:] if len(audio) else None,
                 max_tokens = self.max_tokens
             ):
                 text += response.text
@@ -141,7 +145,9 @@ class MLXVLMAgent(AgentBase):
 if __name__ == "__main__":
     model = "mlx-community/gemma-3n-E2B-it-4bit"
     agent = MLXVLMAgent(model)
+    prompt = "Transcribe the audio @/Users/deekshith/Downloads/sample.mp3"
     agent.start()
+    asyncio.run(agent.send_prompt(prompt))
         
         
 

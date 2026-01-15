@@ -26,7 +26,7 @@ def build(prompt: str):
             audio.append(str(resource.path))
 
         elif resource.resource_type == "image":
-            additional_token = f"Image here: {str(resource.path)}"
+            additional_token = f"\nImage here: {str(resource.path)}\n"
             images.append(str(resource.path))
             
         result.append(prompt[last_index:a])
@@ -43,8 +43,6 @@ def build(prompt: str):
 
 
 if __name__ == "__main__":
-    prompt = """This a test to see what the output is
-So this is what it is there is a file here @/Users/deekshith/Downloads/escher.jpg
-There is also @/Users/deekshith/Downloads/test.txt and a audio file @/Users/deekshith/Downloads/sample.mp3
-"""
+    prompt = """
+    What do you hear in this audio? @/Users/deekshith/Downloads/sample.mp3"""
     print(build(prompt))

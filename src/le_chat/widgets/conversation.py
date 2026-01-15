@@ -28,7 +28,8 @@ class Conversation(containers.Vertical):
     agent: var[AgentBase | None] = var(None, bindings=True)
     # mlx-community/gemma-3n-E2B-it-4bit
     # mlx-community/gemma-3-12b-it-qat-4bit
-    model_name: var[str | None] = var("mlx-community/gemma-3n-E2B-it-4bit")
+    # lmstudio-community/gemma-3n-E4B-it-MLX-8bit
+    model_name: var[str | None] = var("lmstudio-community/gemma-3n-E4B-it-MLX-8bit")
 
     def __init__(self):
         super().__init__()
