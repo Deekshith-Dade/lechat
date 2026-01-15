@@ -27,7 +27,7 @@ def validate_input_files(prompt: str):
             return False, f"{file_path} File not found."
     
     return True, "All Files Found"
-     
+
 
 if __name__ == "__main__":
     prompt = """This is a new thing that I'm testing let's see how it
