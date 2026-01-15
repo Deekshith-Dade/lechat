@@ -9,7 +9,7 @@ from textual.binding import Binding
 from textual.content import Content
 from textual.highlight import highlight, HighlightTheme, TokenType
 from textual.message import Message
-from textual.reactive import reactive
+from textual.reactive import reactive, var
 from textual.widgets import TextArea
 
 from pygments.token import Token
@@ -65,13 +65,23 @@ class Prompt(TextArea):
 
     BINDINGS = [
         Binding(
-            "ctrl+j,shift+enter",
+            "enter",
             "prompt_submit",
             "Send",
-            key_display="⇧+⏎",
+            key_display="⏎",
+            priority=True,
             tooltip="Send the prompt to the agent"
-        )
+        ),
+        Binding(
+            "ctrl+j,shift+enter",
+            "newline",
+            "Line",
+            key_display="⇧+⏎",
+            tooltip="Insert a new line character",
+        ),
     ]
+    
+    warning_message = var("")
 
     def __init__(
         self,
@@ -96,6 +106,12 @@ class Prompt(TextArea):
         )
         self.compact = True
 
+    def on_mount(self) -> None:
+        self.update_prompt()
+
+    def watch_warning_message(self, value: str):
+        self.border_title = value
+        
     @property
     def highlight_lines(self) -> list[Content]:
         if self._highlight_lines is None:
@@ -115,16 +131,29 @@ class Prompt(TextArea):
         )
         content = content.highlight_regex(RE_MATCH_FILE_PROMPT, style="$primary")
         return content
-        
+
+    def action_newline(self) -> None:
+        self.insert("\n")
+
     def action_prompt_submit(self) -> None:
-        self.post_message(UserInputSubmitted(self.text))
-        self.clear()
+        if self.text:
+            self.post_message(UserInputSubmitted(self.text))
+            self.border_title = ""
+            self.update_prompt()
     
+    def update_prompt(self) -> None:
+        self.placeholder = Content.assemble(
+                "Type your Message here...".expandtabs(12),
+               ("▌@▐", "r"),
+                " files",
+            )
+        self.highlight_language = "markdown"
+
     @on(TextArea.Changed)
     def _on_changed(self) -> None:
         self._highlight_lines = None
         self._text_cache.clear()
-
+    
     def get_line(self, line_index: int) -> Text:
         if (cached_line := self._text_cache.get(line_index)) is not None:
             return cached_line.copy()

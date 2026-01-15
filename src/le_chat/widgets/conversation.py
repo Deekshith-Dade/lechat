@@ -1,4 +1,5 @@
 from asyncio import sleep
+from pathlib import Path
 import llm
 from textual import containers, getters, on, work
 from textual.app import ComposeResult
@@ -7,6 +8,7 @@ from textual.widgets import Input
 
 from le_chat.agent.agent import AgentBase, AgentFail, AgentLoading, AgentReady
 from le_chat.app import ChatApp
+from le_chat.utils.prompt.extract import extract_paths_from_prompt, validate_input_files
 from le_chat.widgets.prompt import Prompt, UserInputSubmitted
 from le_chat.widgets.throbber import Throbber
 from le_chat.widgets.user_input import UserInput
@@ -26,7 +28,7 @@ class Conversation(containers.Vertical):
     agent: var[AgentBase | None] = var(None, bindings=True)
     # mlx-community/gemma-3n-E2B-it-4bit
     # mlx-community/gemma-3-12b-it-qat-4bit
-    model_name: var[str | None] = var("mlx-community/gemma-3n-E2B-it-4bit")
+    model_name: var[str | None] = var("mlx-community/gemma-3-12b-it-qat-4bit")
 
     def __init__(self):
         super().__init__()
@@ -40,7 +42,7 @@ class Conversation(containers.Vertical):
         yield Throbber(id="throbber")
         with containers.Vertical(id="chat-layout"):
             yield containers.Vertical(id="chat-view")
-            yield Prompt()
+            yield Prompt(id="user-prompt")
  
     @work(thread=True)
     async def start_agent(self) -> None:
@@ -53,6 +55,15 @@ class Conversation(containers.Vertical):
     @on(UserInputSubmitted)
     async def on_input(self, event: UserInputSubmitted) -> None:
         event.stop()
+        success, msg = validate_input_files(event.body)
+        prompt_widget: Prompt = self.query_one("#user-prompt")
+        if not success:
+            prompt_widget.warning_message = msg
+            return
+        else:
+            prompt_widget.clear()
+
+            
         chat_view = self.query_one("#chat-view")
         await chat_view.mount(userInput := UserInput(event.body))
         userInput.scroll_visible()
