@@ -92,10 +92,10 @@ class Conversation(containers.Vertical):
     @on(AgentFail)
     async def on_agent_fail(self, event: AgentFail) -> None:
         if self._agent_response is not None:
-            await self._agent_response.append_fragment(event.details)
+            await self._agent_response.append_fragment(f"{event.details} : {event.message}")
         else:
             chat_view = self.query_one("#chat-view")
-            await chat_view.mount(response := Response(event.details))
+            await chat_view.mount(response := Response(f"{event.details} : {event.message}"))
             response.anchor()
 
     @on(AgentReady)

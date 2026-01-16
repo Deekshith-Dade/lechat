@@ -5,7 +5,7 @@ from le_chat.app import ChatApp
 
 
 def main():
-    app = ChatApp()
+    app = ChatApp(mode="launcher")
     app.run()
 
 

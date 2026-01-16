@@ -56,11 +56,11 @@ class MLXVLMAgent(AgentBase):
             self.processor = processor
             self.post_message(AgentReady())
         except Exception:
-            self.post_message(AgentLoading(f"Downloading {self.model_name}..."))
+            self._update_loading_status(f"Downloading {self.model_name}...")
             try:
                 if download_model(self.model_name, self._update_loading_status):
-                    self.post_message(AgentLoading(f"Loading {self.model_name}..."))
-                    model, processor = load(self.model_name, local_files_only=True)
+                    self._update_loading_status(f"Loading {self.model_name}...")
+                    model, processor = load(self.model_name)
                     self.agent = model
                     self.processor = processor
                     self.post_message(AgentReady())
@@ -152,6 +152,7 @@ class MLXVLMAgent(AgentBase):
             print(f"Exception: {e}")
             import traceback
             traceback.print_exc()
+            self.history.pop()
             self.post_message(AgentFail(e, "Failed During Generation"))
 
 if __name__ == "__main__":
