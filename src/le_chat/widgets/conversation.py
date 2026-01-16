@@ -29,7 +29,8 @@ class Conversation(containers.Vertical):
     # mlx-community/gemma-3n-E2B-it-4bit
     # mlx-community/gemma-3-12b-it-qat-4bit
     # lmstudio-community/gemma-3n-E4B-it-MLX-8bit
-    model_name: var[str | None] = var("lmstudio-community/gemma-3n-E4B-it-MLX-8bit")
+    # lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit
+    model_name: var[str | None] = var("lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit")
 
     def __init__(self):
         super().__init__()

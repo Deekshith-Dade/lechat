@@ -44,5 +44,6 @@ def build(prompt: str):
 
 if __name__ == "__main__":
     prompt = """
-    What do you hear in this audio? @/Users/deekshith/Downloads/sample.mp3"""
-    print(build(prompt))
+    Explain what's in the file please? @/Users/deekshith/Downloads/save.txt"""
+    inp = build(prompt)
+    breakpoint()

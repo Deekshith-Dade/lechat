@@ -1,12 +1,13 @@
 import asyncio
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
+
 from mlx_vlm import apply_chat_template
 from mlx_vlm.generate import stream_generate, load
 
 from textual.message_pump import MessagePump
 from le_chat.agent.agent import AgentBase, AgentFail, AgentReady, AgentLoading, MessageContainer, MessageDetails
+from le_chat.agent.huggingface_utils import download_model
 from le_chat.widgets.response import ResponseUpdate, ResponseMetadataUpdate
 from le_chat.agent.mlx_vlm_agent.prompt import build as build_prompt
 
@@ -44,6 +45,9 @@ class MLXVLMAgent(AgentBase):
         self.max_tokens = 2048
         self.history: List[MLXVLMMessageContainer] = []
     
+    def _update_loading_status(self, status: str) -> None:
+        self.post_message(AgentLoading(status))
+
     def start(self, message_target: MessagePump | None = None) -> None:
         self._message_target = message_target
         try:
@@ -51,11 +55,19 @@ class MLXVLMAgent(AgentBase):
             self.agent = model
             self.processor = processor
             self.post_message(AgentReady())
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print(f'Exception {e}')
-            self.post_message(AgentFail(e, "Loading Failed From mlx"))
+        except Exception:
+            self.post_message(AgentLoading(f"Downloading {self.model_name}..."))
+            try:
+                if download_model(self.model_name, self._update_loading_status):
+                    self.post_message(AgentLoading(f"Loading {self.model_name}..."))
+                    model, processor = load(self.model_name, local_files_only=True)
+                    self.agent = model
+                    self.processor = processor
+                    self.post_message(AgentReady())
+                else:
+                    self.post_message(AgentFail("Download failed", f"Failed to download {self.model_name}"))
+            except Exception as e:
+                self.post_message(AgentFail(str(e), "Loading failed"))
     
     async def change_model(self, model_name: str) -> bool | None:
         self.model_name = model_name

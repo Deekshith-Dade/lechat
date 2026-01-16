@@ -77,9 +77,12 @@ class ChatApp(App):
     
     @on(AgentLoading)
     async def on_agent_loading(self, event: AgentLoading) -> None:
-        self.loading_screen = self.get_screen("loading")
-        self.loading_screen.loading_text = event.loading_message
-        await self.push_screen(self.loading_screen)
+        if self.loading_screen is not None:
+            self.loading_screen.loading_text = event.loading_message
+        else:
+            self.loading_screen = self.get_screen("loading")
+            self.loading_screen.loading_text = event.loading_message
+            await self.push_screen(self.loading_screen)
 
     @on(AgentReady)
     async def on_agent_ready(self, event: AgentReady) -> None:
