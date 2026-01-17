@@ -44,6 +44,8 @@ class MLXVLMAgent(AgentBase):
         self.processor = None
         self.max_tokens = 2048
         self.history: List[MLXVLMMessageContainer] = []
+        self._cancel_event: asyncio.Event = asyncio.Event()
+        self._is_generating: bool = False
     
     def _update_loading_status(self, status: str) -> None:
         self.post_message(AgentLoading(status))
@@ -60,7 +62,7 @@ class MLXVLMAgent(AgentBase):
             try:
                 if download_model(self.model_name, self._update_loading_status):
                     self._update_loading_status(f"Loading {self.model_name}...")
-                    model, processor = load(self.model_name)
+                    model, processor = load(self.model_name, local_files_only=True)
                     self.agent = model
                     self.processor = processor
                     self.post_message(AgentReady())
@@ -72,6 +74,17 @@ class MLXVLMAgent(AgentBase):
     async def change_model(self, model_name: str) -> bool | None:
         self.model_name = model_name
         self.start(self._message_target)
+    
+    async def cancel(self) -> bool:
+        """Cancel the current generation if in progress."""
+        # Always allow setting the cancel event - the generation loop will check it
+        # This handles the race condition where cancel is called before _is_generating is set
+        if not self._cancel_event.is_set():
+            print(f"Setting Cancel Event at the agent")
+            self._cancel_event.set()
+            return True
+        # Event already set (cancellation already requested)
+        return False
     
     def _prepare_messages(self) -> str:
         messages = [
@@ -111,42 +124,62 @@ class MLXVLMAgent(AgentBase):
             return 
 
         text = ""
+        self._cancel_event.clear()
+        self._is_generating = True
         try:
             prompt, images, audio = self._prepare_messages()
             print(audio)
             last_response = None
+            
+            # This method is already running in a thread (via @work(thread=True)),
+            # so we can do blocking work directly here and check cancellation between iterations
             for response in stream_generate(
                 self.agent, 
                 self.processor, 
                 prompt, 
                 image = images if len(images) else None, 
                 # Currently supports one audio file
-                audio = audio[-1:] if len(audio) else None,
-                max_tokens = self.max_tokens
+                audio=audio[-1:] if len(audio) else None,
+                max_tokens=self.max_tokens,
+                skip_special_tokens=False,
             ):
+                # Check for cancellation between iterations
+                if self._cancel_event.is_set():
+                    self.post_message(ResponseUpdate(text="\n\n[Generation cancelled by user]"))
+                    break
+                    
                 text += response.text
                 self.post_message(ResponseUpdate(text=response.text))
                 last_response = response
             
-
-            metadata = dict(
-                prompt_tokens=getattr(last_response, "prompt_tokens", None),
-                generation_tokens=getattr(last_response, "generation_tokens", None),
-                total_tokens=getattr(last_response, "total_tokens", None),
-                prompt_tps=getattr(last_response, "prompt_tps", None),
-                generation_tps=getattr(last_response, "generation_tps", None),
-                peak_memory=getattr(last_response, "peak_memory", None),
-            )
+            # Check if generation was cancelled
+            was_cancelled = self._cancel_event.is_set()
             
-            details = MLXVLMMessageDetails(**metadata)
-            message = ResponseMetadataUpdate(**metadata)
-            self.post_message(message)
-            
-            self.history.append(MLXVLMMessageContainer(
-                role="assistant", 
-                content=text, 
-                details=details
-            ))
+            if not was_cancelled and last_response is not None:
+                metadata = dict(
+                    prompt_tokens=getattr(last_response, "prompt_tokens", None),
+                    generation_tokens=getattr(last_response, "generation_tokens", None),
+                    total_tokens=getattr(last_response, "total_tokens", None),
+                    prompt_tps=getattr(last_response, "prompt_tps", None),
+                    generation_tps=getattr(last_response, "generation_tps", None),
+                    peak_memory=getattr(last_response, "peak_memory", None),
+                )
+                
+                details = MLXVLMMessageDetails(**metadata)
+                message = ResponseMetadataUpdate(**metadata)
+                self.post_message(message)
+                
+                self.history.append(MLXVLMMessageContainer(
+                    role="assistant", 
+                    content=text, 
+                    details=details
+                ))
+            elif text:  # Cancelled but we have partial text - save without metadata
+                self.history.append(MLXVLMMessageContainer(
+                    role="assistant", 
+                    content=text, 
+                    details=None
+                ))
 
         except Exception as e:
             print(f"Exception: {e}")
@@ -154,6 +187,9 @@ class MLXVLMAgent(AgentBase):
             traceback.print_exc()
             self.history.pop()
             self.post_message(AgentFail(e, "Failed During Generation"))
+        finally:
+            self._is_generating = False
+            self._cancel_event.clear()
 
 if __name__ == "__main__":
     model = "mlx-community/gemma-3n-E2B-it-4bit"

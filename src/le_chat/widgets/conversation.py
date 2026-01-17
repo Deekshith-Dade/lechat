@@ -3,6 +3,7 @@ from pathlib import Path
 import llm
 from textual import containers, getters, on, work
 from textual.app import ComposeResult
+from textual.binding import Binding
 from textual.reactive import reactive, var
 from textual.widgets import Input
 
@@ -20,6 +21,17 @@ SYSTEM = "You are the HAL 9000 the AI from the movie 2001 Space Odyssey and you 
 class Conversation(containers.Vertical):
     
     BINDING_GROUP_TITLE = "Conversation"
+    BINDINGS = [
+        Binding(
+            "ctrl+c,escape",
+            "cancel_generation",
+            "Stop Generation",
+            key_display="Ctrl+C / Esc",
+            tooltip="Stop the current generation",
+            priority=True,
+        ),
+    ]
+    
     model_name = var("gpt-4o")
     busy_count = var(0)
     
@@ -30,6 +42,7 @@ class Conversation(containers.Vertical):
     # mlx-community/gemma-3-12b-it-qat-4bit
     # lmstudio-community/gemma-3n-E4B-it-MLX-8bit
     # lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit
+    # mlx-community/medgemma-1.5-4b-it-4bit
     model_name: var[str | None] = var("lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit")
 
     def __init__(self):
@@ -137,6 +150,15 @@ class Conversation(containers.Vertical):
     async def agent_turn_over(self, stop_reason: str | None = "end_turn") -> None:
         # elaborate more on stop_reason
         self._agent_response = None
+    
+    async def action_cancel_generation(self) -> None:
+        """Cancel the current generation if in progress."""
+        if self.agent is not None and self.busy_count > 0:
+            cancelled = await self.agent.cancel()
+            if cancelled:
+                # Don't decrement busy_count here - let send_prompt_to_agent's finally block handle it
+                # Just trigger the turn over callback
+                self.call_later(self.agent_turn_over, "cancelled")
 
 
             
