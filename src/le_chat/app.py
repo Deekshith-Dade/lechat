@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from le_chat.screens.chat import ChatScreen
     from le_chat.screens.settings import SettingsScreen
     from le_chat.screens.launcher import Launcher
+    from le_chat.screens.stt import SttScreen
     
 SYSTEM = """Formulate all responses as if you where the sentient AI named Mother from the Aliens movies."""
 
@@ -35,6 +36,10 @@ def get_launcher_screen() -> "Launcher":
         
         return LauncherScreen()
 
+def get_stt_screen() -> "SttScreen":
+    from le_chat.screens.stt import SttScreen
+
+    return SttScreen()
 
 class ChatApp(App):
 
@@ -47,16 +52,29 @@ class ChatApp(App):
     MODES = {
         "launcher": get_launcher_screen,
         "chat": get_chat_screen,
+        "stt": get_stt_screen,
     }
 
 
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding(
-            "f2,ctrl+comma",
+            "f1",
             "settings",
             "Settings",
             tooltip="Settings screen"
-        )
+        ),
+        Binding(
+            "f2",
+            "switch_mode('chat')",
+            "Chat Mode",
+            tooltip="Switch to Chat Mode"
+        ),
+        Binding(
+            "f3",
+            "switch_mode('stt')",
+            "STT Mode",
+            tooltip="Switch to STT Mode"
+        ),
     ]
     
     loading_screen: LoadingScreen | None = None

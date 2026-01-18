@@ -17,6 +17,7 @@ from le_chat import interaction_item_schema
 from le_chat.app import ChatApp
 from le_chat.interaction_item_schema import InteractionItemSchema
 from le_chat.screens.settings import SettingsScreen
+from le_chat.screens.stt import SttScreen
 from le_chat.widgets import grid_select
 from le_chat.widgets.grid_select import GridSelect 
 
@@ -264,8 +265,8 @@ class LauncherScreen(Screen):
         screen = None
         if item_name == "chat":
             screen = ChatScreen()
-        # elif item_name == "tts":
-        #     screen = SettingsScreen()
+        elif item_name == "stt":
+            screen = SttScreen()
         
         if screen is not None:
             await self.app.push_screen_wait(screen)
@@ -283,7 +284,7 @@ class LauncherScreen(Screen):
     async def on_mount(self) -> None:
         data = {
             "chatapp" : InteractionItemSchema(item_name="chat", display_name="Chat with VLMs", description="Do whatever you want with OMNI Models"),
-            "tts" : InteractionItemSchema(item_name="tts", display_name="Text To Speech Models", description="Do whatever you want with TTS Models"),
+            "stt" : InteractionItemSchema(item_name="stt", display_name="Speech to Text Models", description="Do whatever you want with TTS Models"),
         }
         try:
             self._interaction_items = data

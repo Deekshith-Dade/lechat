@@ -31,7 +31,7 @@ class SettingsScreen(ModalScreen):
                 yield Static("This will be Settings Menu")
                 yield containers.Horizontal(
                     Static("off:     ", classes="label"),
-                    Switch(value=self.show_response_info, id="response-info-switch"),
+                    # Switch(value=self.show_response_info, id="response-info-switch"),
                     classes="container",
                 )
         yield Footer()
