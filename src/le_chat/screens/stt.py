@@ -1,12 +1,16 @@
+from typing import Union
 from textual import containers, on, work, events
 from textual.reactive import var
 from textual.screen import Screen
 
 from le_chat.agent.stt_model.base import STTFullTranscriptionReady, STTModelLoading, STTModelReady
 from le_chat.audio import AudioProcessor
+from le_chat.utils.prompt.extract import validate_input_files
+from le_chat.widgets.prompt import Prompt, UserInputSubmitted
 from le_chat.widgets.stt_response import STTResponse, STTResponseUpdate
 from le_chat.widgets.non_selectable_label import NonSelectableLabel
 from le_chat.widgets.throbber import Throbber
+from le_chat.widgets.user_input import UserInput
 
 
 
@@ -20,7 +24,7 @@ class SttScreen(Screen):
 
     # mlx-community/parakeet-tdt-0.6b-v2
     # mlx-community/whisper-large-v3-turbo
-    model_name: var[str | None] = var("mlx-community/parakeet-tdt-0.6b-v2")
+    model_name: var[str | None] = var("mlx-community/whisper-large-v3-turbo")
 
     def __init__(self, sample_rate=16000, chunk_sec=5.0):
         super().__init__()
@@ -52,6 +56,7 @@ class SttScreen(Screen):
         with containers.Vertical(id="stt-layout"):
             yield NonSelectableLabel("Idle", id="recording-indicator")
             yield containers.Vertical(id="stt-view")
+            yield Prompt(id="user-prompt")
 
     async def on_key(self, event: events.Key) -> None:
         """Toggle recording on each space press."""
@@ -113,3 +118,27 @@ class SttScreen(Screen):
             await self.audio_model.cancel()
             self._model_response = None
     
+    @on(UserInputSubmitted)
+    async def on_user_input_submitted(self, message: UserInputSubmitted) -> None:
+        """Handle user input submission."""
+        success, msg = validate_input_files(message.body)
+        prompt_widget: Prompt = self.query_one("#user-prompt")
+        if not success:
+            prompt_widget.warning_message = msg
+            return
+        else:
+            prompt_widget.clear()
+        user_input = UserInput(message.body)
+        stt_view = self.query_one("#stt-view", containers.Vertical)
+        await stt_view.mount(user_input)
+        user_input.anchor()
+        self._model_response = response = STTResponse()
+        await stt_view.mount(response)
+        response.border_title = self.model_name.upper()
+        response.anchor()
+        self.send_files_to_model(message.body)
+    
+    @work(thread=True)
+    async def send_files_to_model(self, prompt: str) -> None:
+        """Send user-provided audio files to the STT model for transcription."""
+        await self.audio_model.submit_prompt(prompt)

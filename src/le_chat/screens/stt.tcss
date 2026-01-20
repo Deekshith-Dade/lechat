@@ -7,7 +7,7 @@ Screen {
 
 #stt-layout {
     layout: grid;
-    grid-rows: 1fr auto;
+    grid-rows: auto 1fr auto;
     width: 100%;
     height: 100%;
     background: #000000;
@@ -41,6 +41,34 @@ STTResponse {
     color: #e0e0e0;
     margin: 1 2 2 2;
     padding: 1 2 1 2;
+}
+
+Prompt {
+    width: 100%;
+    padding: 1 2 0 2;
+    height: auto;
+    max-height: 10;
+    background: #000000;
+    color: #e0e0e0;
+    border: tall #e0e0e0;
+    border-title-color: $warning;
+    border-title-style: bold;
+    border-title-align: center;
+}
+
+UserInput {
+    border-left: blank $secondary;
+    margin: 1 16 1 0;
+    padding: 1 2 1 2;
+    background: #1a1a1a 70%;
+    color: #ffffff;
+    #prompt {
+        margin: 0 1 0 0;
+        color: rgb(239, 239, 239);
+    }
+    #content {
+        width: 1fr;
+    }
 }
 
 Throbber {

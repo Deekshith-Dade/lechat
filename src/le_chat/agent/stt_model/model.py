@@ -1,12 +1,14 @@
 
 import queue
 import threading
+from typing import Union
 
 # Import huggingface_utils first to apply tqdm patches before other imports
 from le_chat.agent.huggingface_utils import download_model
 
 from textual.message_pump import MessagePump
 from le_chat.agent.stt_model.base import STTModelBase, STTModelFail, STTModelReady, STTModelLoading, STTFullTranscriptionReady
+from le_chat.agent.stt_model.utils import extract_audio_paths
 from mlx_audio.utils import load_model
 
 from le_chat.widgets.stt_response import STTResponseUpdate
@@ -43,6 +45,30 @@ class MLXAudioSTTModel(STTModelBase):
                 self.post_message(STTModelFail(str(e), "Loading Failed"))
     
     # async def change_model
+    async def submit_prompt(self, prompt: str) -> None:
+        """Extract audio files from the prompt and transcribe them."""
+        audio_paths = extract_audio_paths(prompt)
+        if not audio_paths:
+            self.post_message(STTModelFail("No audio files found", "No audio files in prompt"))
+            return
+        await self.transcribe_audio(audio_paths)
+        self.post_message(STTFullTranscriptionReady())
+
+    async def transcribe_audio(self, audio_path: Union[str, list[str]]) -> None:
+        """Transcribe a single audio file or a list of audio files."""
+        if self.model is None:
+            self.post_message(STTModelFail("Model not loaded", "Model not loaded"))
+            return
+        if isinstance(audio_path, str):
+            audio_path = [audio_path]
+        for path in audio_path:
+            try:
+                segments = self.model.generate(path, verbose=True)
+                self.post_message(STTResponseUpdate(segments.text))
+            except Exception as e:
+                import traceback
+                print(traceback.format_exc())
+                self.post_message(STTModelFail(str(e), f"Failed to transcribe {path}"))
 
     async def transcribe(self) -> None:
         self._cancel_event.clear()
